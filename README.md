@@ -7,9 +7,8 @@ This repository contains an analysis of continuous glucose monitoring (CGM) data
 ## Files
 - `Project_Submission_Yazan Abdullatif.qmd` - Main Quarto report
 - `Rfinal.R` - R script with analysis code
-- `raw_data_sample.csv` - Sample of raw data
-- `cleaned_data_sample.csv` - Sample of cleaned data
-- `figures/` - Folder with plots
+- `data_samples` - Samples of raw and clean data 
+- `figures` - Folder with plots
 
 ## Key Results
 - Time in Range (70-180): 99.9%
