@@ -1,0 +1,2 @@
+days_of_data,n_readings,min_glucose,q1_glucose,med_glucose,q3_glucose,max_glucose,mean_glucose,sd_glucose,cv_glucose,TIR,TITR
+9.39236111111111,2701,70,92,97,109,280,101.57534246575342,14.857295474542429,0.14626872146211697,99.92595335061088,98.37097371343947

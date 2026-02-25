@@ -1,0 +1,212 @@
+---
+title: "Project_Submission_Yazan Abdullatif"
+author: "Yazan Abdullatif"
+format: html
+editor: visual
+---
+
+Final Project submitted in completion of the bridge module Fundamentals of Programming for Digital Health WiSe 25/26\
+
+CGM interstitial glucose data analysis\
+In this project, I shall be analyzing my own interstitial glucose values, acquired by the Freestyle Libre 3 Plus continuous Glucose Monitor (CGM), over the period between 28.01.2026 and 07.02.2026. Showing the steps taken in loading, cleaning and processing the data and preparing for further utilization, as well as computing essential glycemic metrics level of the person, form which we can draw conclusions about the persons' glucose management level and condition.
+
+```{r,include=FALSE}
+library(dplyr)
+library(tidyr)
+library(readr)
+library(lubridate)
+library(purrr)
+library(ggplot2)
+library(tidyverse)
+```
+
+```{r loading data}
+# loading data --------
+raw <- read_csv("YazanAbdullatif_glucose_10-2-2026.csv")
+raw_data_sample <- raw %>%
+  head(15)
+write_csv(raw_data_sample, "raw_data_sample.csv")
+
+```
+
+```{r cleaning data}
+# ----------- data cleaning
+# raw and skipping first row containing metadata
+raw1 <- read_csv("YazanAbdullatif_glucose_10-2-2026.csv", skip = 1)
+# sample with first 15 rows
+raw1_data_sample <- raw1 %>%
+  head(15) %>%
+  mutate(`Device Timestamp` = as.character(`Device Timestamp`))
+
+str(raw1)
+cleaned_data <- raw1 %>%
+  # Keep only historic glucose readings
+  filter(`Record Type` == 0) %>%
+  # Select only needed columns (historic glucose and timestamps)
+  select(
+    timestamp = `Device Timestamp`,
+    glucose = `Historic Glucose mg/dL`
+  ) %>%
+  # Convert timestamp to POSIXct
+  mutate(
+    timestamp = dmy_hm(timestamp),
+    glucose = as.numeric(glucose)
+  ) %>%
+  # Remove missing glucose values
+  filter(!is.na(glucose)) %>%
+  # Sort by time - ascening
+  arrange(timestamp)
+
+# view the results
+view(cleaned_data)
+str(cleaned_data)
+
+cleaned_data_sample <- cleaned_data %>%
+  head(20) %>%
+  mutate(timestamp = format(timestamp, "%Y-%m-%d %H:%M"))
+cleaned_data_sample
+
+
+# saving data directory
+dir.create("data_samples")
+write_csv(raw_data_sample, "data_samples/raw_data_sample.csv")
+write_csv(raw1_data_sample, "data_samples/raw1_data_sample.csv")
+write_csv(cleaned_data_sample, "data_samples/cleaned_data_sample.csv")
+
+```
+
+```{r time series plot}
+timeplot <- ggplot(cleaned_data, aes(x = timestamp, y = glucose)) +
+  geom_line(linewidth = 0.3, alpha = 0.8, colour = "blue") +
+  geom_hline(yintercept = c(70, 180), linetype = "dashed", colour = "gray40") +
+  labs(x = "Date and time", y = "Glucose (mg/dL)", title = "historic glucose over time") +
+  scale_x_datetime(date_breaks = "1 day", date_labels = "%d %b",
+                   limits = as.POSIXct(c("2026-01-28", "2026-02-10")))
+timeplot
+```
+
+```{r Glycemic metrics}
+# Defining glucose ranges
+
+TIR_UPPER <- 180 # upper limit for time in range
+TIR_LOWER <- 70  # lowerlimit for TIR and TITR
+TITR_UPPER <- 140 # upper limit for TITR
+
+# Calculate glycemic metrics (with AI assistance)
+glycemic_metrics <- cleaned_data %>%
+  summarise(
+    days_of_data = as.numeric(difftime(max(timestamp), min(timestamp), units = "days")),
+    n_readings = n(), # count total number of readings
+    
+    min_glucose = min(glucose),
+    q1_glucose = quantile(glucose, 0.25)[[1]],
+    med_glucose = median(glucose),
+    q3_glucose = quantile(glucose, 0.75)[[1]],
+    max_glucose = max(glucose),
+    mean_glucose = mean(glucose),
+    sd_glucose = sd(glucose),
+    cv_glucose = sd_glucose / mean_glucose,# coefficeint of variation
+    
+    TIR = sum(glucose >= TIR_LOWER & glucose <= TIR_UPPER) / n() * 100, # percentage of time spent in TIR
+    TITR = sum(glucose >= TIR_LOWER & glucose <= TITR_UPPER) / n() * 100 # percentage of time spent in TITR
+  )
+
+View(glycemic_metrics)
+
+```
+
+```{r boxplot}
+
+box_plot <- ggplot(cleaned_data, aes(y = glucose)) +
+  geom_boxplot(fill = "skyblue", alpha = 0.7, width = 0.3) +
+  annotate("rect",
+           xmin = -Inf,
+           xmax = Inf,
+           ymin = 70, ymax = 180,
+           fill = "green", alpha = 0.1) +
+  geom_hline(yintercept = c(70, 180), linetype = "dashed", color = "darkgreen") +
+  labs(
+    title = "Glucose Distribution - Box Plot",
+    subtitle = paste("TIR:", round(glycemic_metrics$TIR, 1), 
+                     "% | Mean:", round(glycemic_metrics$mean_glucose, 1), "mg/dL"),
+    y = "Glucose (mg/dL)",
+    x = ""
+  ) +
+  ylim(40, 250) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(color = "gray40"),
+    axis.text.x = element_blank()
+  )
+
+box_plot
+```
+
+```{r histogram}
+histo <- ggplot(cleaned_data, aes(x = glucose)) +
+  geom_histogram(binwidth = 5, fill = "orange", color = "white", alpha = 0.8) +
+  geom_vline(xintercept = c(70, 140, 180), 
+             linetype = "dashed", 
+             color = c("red", "orange", "darkgreen"),
+             size = 0.7) +
+  geom_vline(xintercept = glycemic_metrics$mean_glucose, 
+             color = "blue", size = 1, linetype = "solid") +
+  geom_vline(xintercept = glycemic_metrics$med_glucose,
+             color = "purple", size = 1, linetype = "dotted") +
+  annotate("text", x = glycemic_metrics$mean_glucose + 8, y = 50, 
+           label = "Mean", angle = 90, color = "blue", size = 3) +
+  annotate("text", x = glycemic_metrics$med_glucose - 8, y = 50, 
+           label = "Median", angle = 90, color = "purple", size = 3) +
+  labs(
+    title = "Histogram - distribution",
+    subtitle = paste("n =", glycemic_metrics$n_readings, "readings |",
+                     "Mean:", round(glycemic_metrics$mean_glucose, 1), "mg/dL |",
+                     "Median:", round(glycemic_metrics$med_glucose, 1), "mg/dL"),
+    x = "Glucose (mg/dL)",
+    y = "Frequency"
+  ) +
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold", size = 14),
+    plot.subtitle = element_text(color = "gray40")
+  )
+
+histo
+
+```
+
+```{r save plots}
+# Save Plots
+
+# Create figures folder 
+dir.create("figures")
+
+# Save time series plot
+ggsave("figures/timeseries.png", plot = timeplot, width = 12, height = 4, dpi = 300)
+
+# Save box plot
+ggsave("figures/boxplot.png", plot = box_plot, width = 8, height = 6, dpi = 300)
+
+# Save histogram
+ggsave("figures/histogram.png", plot = histo, width = 10, height = 6, dpi = 300)
+
+# Save metrics as CSV
+write_csv(glycemic_metrics, "figures/glycemic_metrics.csv")
+```
+
+```         
+Summary and Conclusion
+
+Time in Range (70-180 mg/dL) | `r round(glycemic_metrics$TIR, 1)`% | >70% | excellent
+Time in Tight Range (70-140 mg/dL) | `r round(glycemic_metrics$TITR, 1)`% | >50% | excellent
+Coefficient of Variation (CV) | `r round(glycemic_metrics$cv_glucose * 100, 1)`% | <36% | excellent
+Mean Glucose | `r round(glycemic_metrics$mean_glucose, 1)` mg/dL | 70-140 | optimal
+Median Glucose | `r round(glycemic_metrics$med_glucose, 1)` mg/dL | 70-140 | optimal
+```
+
+```         
+Based on the analysis, the individual demonstrates excellent glycemic control with near optimal TIR and TITR metrics
+```
+
+\
