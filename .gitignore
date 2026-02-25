@@ -1,4 +1,12 @@
-.Rproj.user
+# Ignore raw data folder
+raw_data_large/
+
+# Ignore R temporary files
 .Rhistory
 .RData
-.Ruserdata
+.Rproj.user
+*.Rproj.user
+
+# Ignore system files
+.DS_Store
+Thumbs.db

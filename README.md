@@ -2,25 +2,25 @@
 Final Project for FoP25/26 
 # Glucose Dynamics Analysis
 
-This repository contains an analysis of continuous glucose monitoring (CGM) data from a FreeStyle Libre 3 sensor.
+CGM data analysis project for FoP 25/26 
 
 ## Files
-- `Project_Submission_Yazan Abdullatif.qmd` - Main Quarto report
-- `Rfinal.R` - R script with analysis code
-- `data_samples` - Samples of raw and clean data 
-- `figures` - Folder with plots
+- `Project_Submission_Yazan Abdullatif.qmd` - Main report
+- `functions.R` - Analysis functions
+- `process_data.R` - Data processing script
+- `reduce_data_size.R` - Creates data samples
+- `test_functions.R` - Function tests
+- `raw_data_small/` - Sample data files
+- `clean_data_full.csv` - Complete cleaned dataset
 
-## Key Results
-- Time in Range (70-180): 99.9%
-- Time in Tight Range (70-140): 98%
-- Coefficient of Variation: 14%
+## Results
+- Time in Range: 99.9%
+- Time in Tight Range: 98%
+- CV: 14%
 
-## Key Metrics
-
-- Time in Range (70-180 mg/dL): ~99.9%
-- Time in Tight Range (70-140 mg/dL): ~98%
-- Coefficient of Variation: ~14%
-
-## Data Privacy
-
-Only sample data (first 15-20 rows) is included in this repository. Full raw data is kept local for privacy.
+## How to run
+1. Run `reduce_data_size.R`
+2. Run `process_data.R`
+3. run `functions.R`
+4. Run `test_functions.R`
+5. Render `Project_Submission_Yazan Abdullatif.qmd`
